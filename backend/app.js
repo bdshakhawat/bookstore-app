@@ -1,8 +1,9 @@
 
 import express from 'express';
+import cors from "cors";
 import pool from './db.js'; // Import the database connection
-
 const app = express();
+app.use(cors());
 
 // Middleware to parse JSON request bodies
 app.use(express.json());
@@ -28,6 +29,8 @@ app.post("/books", async (req, res) => {
   res.status(500).json({error: "Failed to create book"});
 }
 });
+
+app.use(cors()); // Enable CORS for all routes
 
 
 // Route to get all books
