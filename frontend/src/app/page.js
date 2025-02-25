@@ -1,9 +1,11 @@
 "use client";
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { UserButton, SignInButton, SignedIn, SignedOut, useUser } from "@clerk/nextjs";
 
 export default function Home() {
   const [books, setBooks] = useState([]); // State for storing books
+  const { isSignedIn, user } = useUser();
 
   useEffect(() => {
     const fetchBooks = async () => {
@@ -21,6 +23,17 @@ export default function Home() {
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold text-center mb-6">Bookstore</h1>
+      <div className="flex justify-end mb-4">
+        <SignedIn>
+          <div className="flex items-center">
+            <p className="mr-4">Welcome, {user.firstName}!</p>
+            <UserButton afterSignOutUrl="/" />
+          </div>
+        </SignedIn>
+        <SignedOut>
+          <SignInButton />
+        </SignedOut>
+      </div>
       <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {books.map((book) => (
           <div key={book.id} className="border p-4 rounded-lg shadow-md">
