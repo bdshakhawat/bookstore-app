@@ -1,6 +1,7 @@
 
 import express from 'express';
 import cors from "cors";
+import { requireAuth } from "./middleware/clerkAuth.js";
 import pool from './db.js'; // Import the database connection
 const app = express();
 app.use(cors());
@@ -34,16 +35,25 @@ app.use(cors()); // Enable CORS for all routes
 
 
 // Route to get all books
-app.get("/books", async (req, res) => {
-  try{
-    const [rows] = await pool.query('SELECT * FROM books');
+app.get("/books", requireAuth, async (req, res) => {
+  try {
+    const [rows] = await pool.query("SELECT * FROM books");
     res.status(200).json(rows);
-  }
-  catch(err){
-    console.error("Error Fetching book: ",  err);
-    res.status(500).json({error: "Failed to get books"});
+  } catch (err) {
+    console.error("Error fetching books:", err);
+    res.status(500).json({ error: "Failed to get books" });
   }
 });
+// app.get("/books", async (req, res) => {
+//   try{
+//     const [rows] = await pool.query('SELECT * FROM books');
+//     res.status(200).json(rows);
+//   }
+//   catch(err){
+//     console.error("Error Fetching book: ",  err);
+//     res.status(500).json({error: "Failed to get books"});
+//   }
+// });
 
 
 // Test database connection
