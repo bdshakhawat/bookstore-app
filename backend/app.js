@@ -1,5 +1,9 @@
 
+
+
+
 import express from 'express';
+import mysql from "mysql";
 import cors from "cors";
 import { requireAuth } from "./middleware/clerkAuth.js";
 import pool from './db.js'; // Import the database connection
@@ -8,6 +12,18 @@ app.use(cors());
 
 // Middleware to parse JSON request bodies
 app.use(express.json());
+
+const db = mysql.createConnection({
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+});
+
+db.connect((err) => {
+  if (err) throw err;
+  console.log('MySQL connected...');
+});
 
 // Route to create a new book
 app.post("/books", async (req, res) => {
