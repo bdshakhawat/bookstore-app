@@ -9,7 +9,10 @@ app.use(cors());
 app.use(express.json());
 
 
-
+// Root route
+app.get('/', (req, res) => {
+  res.send('Welcome to the Book Store API!');
+});
 // Route to create a new book
 app.post("/books", async (req, res) => {
   try{
