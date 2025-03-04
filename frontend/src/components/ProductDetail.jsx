@@ -2,19 +2,17 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { UserButton, SignInButton, SignedIn, SignedOut, useUser } from "@clerk/nextjs";
+// import { useRouter } from "next/navigation";
 
 export default function ProductDetail() {
-  // State for storing books
   const [books, setBooks] = useState([]); 
-  // Add isLoaded to check if Clerk has finished loading
   const { isSignedIn, user, isLoaded } = useUser(); 
+  // const router = useRouter();
 
   useEffect(() => {
     const fetchBooks = async () => {
       try {
-        // Fetch books from the backend API
         const response = await axios.get("http://localhost:5000/books"); 
-        // Store books in state
         setBooks(response.data); 
       } catch (err) {
         console.error("Error fetching books:", err);
@@ -24,7 +22,13 @@ export default function ProductDetail() {
     fetchBooks();
   }, []);
 
-  // If Clerk is still loading, show a loading state
+  // Redirect to dashboard if user is signed in
+  // useEffect(() => {
+  //   if (isSignedIn) {
+  //     router.push("/dashboard"); 
+  //   }
+  // }, [isSignedIn, router]);
+
   if (!isLoaded) {
     return <div>Loading...</div>;
   }
@@ -35,13 +39,14 @@ export default function ProductDetail() {
       <div className="flex justify-end mb-4">
         <SignedIn>
           <div className="flex items-center">
-            {/* Check if user exists before accessing firstName */}
             {user && <p className="mr-4">Welcome, {user.firstName}!</p>}
             <UserButton afterSignOutUrl="/" />
           </div>
         </SignedIn>
         <SignedOut>
-          <SignInButton />
+          {/* Pass redirectUrl directly to SignInButton */}
+          {/* <SignInButton redirectUrl="/dashboard" /> */}
+          <SignInButton  />
         </SignedOut>
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
