@@ -2,12 +2,12 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { UserButton, SignInButton, SignedIn, SignedOut, useUser } from "@clerk/nextjs";
-// import { useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 
 export default function ProductDetail() {
   const [books, setBooks] = useState([]); 
   const { isSignedIn, user, isLoaded } = useUser(); 
-  // const router = useRouter();
+  const router = useRouter();
 
   useEffect(() => {
     const fetchBooks = async () => {
@@ -23,11 +23,11 @@ export default function ProductDetail() {
   }, []);
 
   // Redirect to dashboard if user is signed in
-  // useEffect(() => {
-  //   if (isSignedIn) {
-  //     router.push("/dashboard"); 
-  //   }
-  // }, [isSignedIn, router]);
+  useEffect(() => {
+    if (isSignedIn) {
+      router.push("/dashboard"); 
+    }
+  }, [isSignedIn, router]);
 
   if (!isLoaded) {
     return <div>Loading...</div>;
@@ -45,6 +45,7 @@ export default function ProductDetail() {
         </SignedIn>
         <SignedOut>
           {/* Pass redirectUrl directly to SignInButton */}
+
           {/* <SignInButton redirectUrl="/dashboard" /> */}
           <SignInButton  />
         </SignedOut>
