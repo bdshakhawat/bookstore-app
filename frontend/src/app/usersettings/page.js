@@ -1,11 +1,10 @@
+import SettingsPage from "@/components/SettingsDetails";
 
 
 
 const UserSettings = () => {
     return (
-        <div>
-            <h1>User Settings</h1>
-        </div>
+        <SettingsPage/>
     )
 }
 export default UserSettings;

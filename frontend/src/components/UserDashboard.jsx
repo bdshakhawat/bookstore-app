@@ -1,11 +1,16 @@
 "use client";
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { useRouter } from "next/navigation"; // Updated import for Next.js 13+
+import { useClerk } from "@clerk/nextjs"; // Import useClerk for sign-out functionality
 
 export default function UserDashboard() {
   const [items, setItems] = useState([]); // State to store items
   const [newItem, setNewItem] = useState({ title: "", author: "", price: "" }); // State for new item form
   const [editItem, setEditItem] = useState(null); // State for editing an item
+
+  const router = useRouter(); // Initialize Next.js router
+  const { signOut } = useClerk(); // Initialize Clerk signOut function
 
   // Fetch all items on component mount
   useEffect(() => {
@@ -36,33 +41,21 @@ export default function UserDashboard() {
 
   // Add a new item
   const addItem = async () => {
-  try {
-    const response = await axios.post("http://localhost:5000/books", newItem);
-    const addedItem = response.data;
+    try {
+      const response = await axios.post("http://localhost:5000/books", newItem);
+      const addedItem = response.data;
 
-    // Ensure addedItem has a unique id, even temporarily
-    if (!addedItem.id) {
-      addedItem.id = Date.now(); // Temporary unique id
+      // Ensure addedItem has a unique id, even temporarily
+      if (!addedItem.id) {
+        addedItem.id = Date.now(); // Temporary unique id
+      }
+
+      setItems([...items, addedItem]);
+      setNewItem({ title: "", author: "", price: "" }); // Reset form
+    } catch (err) {
+      console.error("Error adding item:", err);
     }
-
-    setItems([...items, addedItem]);
-    setNewItem({ title: "", author: "", price: "" }); // Reset form
-  } catch (err) {
-    console.error("Error adding item:", err);
-  }
-};
-
-  // const addItem = async () => {
-  //   try {
-  //     const response = await axios.post("http://localhost:5000/books", newItem);
-  //     console.log("API Response:", response.data); // Log the API response
-  //     setItems([...items, response.data]); // Add the new item to the list
-  //     setNewItem({ title: "", author: "", price: "" }); // Reset form
-  //     console.log("Updated Items:", items); // Log the updated items state
-  //   } catch (err) {
-  //     console.error("Error adding item:", err);
-  //   }
-  // };
+  };
 
   // Update an existing item
   const updateItem = async () => {
@@ -89,9 +82,39 @@ export default function UserDashboard() {
     }
   };
 
+  // Handle sign out
+  const handleSignOut = async () => {
+    // Sign out the user
+    await signOut(); 
+    // Redirect to the home page
+    router.push("/"); 
+  };
+
+  // Handle settings navigation
+  const handleSettings = () => {
+    // Redirect to the settings page
+    router.push("/usersettings"); 
+  };
+
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold text-center mb-6">User Dashboard</h1>
+
+      {/* Sign Out and Settings Buttons */}
+      <div className="flex justify-end space-x-4 mb-6">
+        <button
+          onClick={handleSettings}
+          className="bg-gray-500 text-white p-2 rounded hover:bg-gray-600"
+        >
+          Settings
+        </button>
+        <button
+          onClick={handleSignOut}
+          className="bg-red-500 text-white p-2 rounded hover:bg-red-600"
+        >
+          Sign Out
+        </button>
+      </div>
 
       {/* Add New Item Form */}
       <div className="mb-8">
@@ -178,7 +201,7 @@ export default function UserDashboard() {
       {/* Display Items */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {items.map((item) => (
-          <div key={item.id } className="border p-4 rounded-lg shadow-md">
+          <div key={item.id} className="border p-4 rounded-lg shadow-md">
             <h2 className="text-lg font-semibold">{item.title}</h2>
             <p className="text-gray-600">Author: {item.author}</p>
             <p className="text-gray-600">Price: ${item.price}</p>
@@ -202,6 +225,8 @@ export default function UserDashboard() {
     </div>
   );
 }
+
+
 
 
 
