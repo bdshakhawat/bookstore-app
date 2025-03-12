@@ -3,6 +3,8 @@ import ProductDetail from "@/components/ProductDetail";
 
 
 const Home = () => {
+    
+    
     return (
         <div>
             <ProductDetail />

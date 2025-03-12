@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { UserButton, SignInButton, SignedIn, SignedOut, useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 export default function ProductDetail() {
   const [books, setBooks] = useState([]); 
@@ -53,9 +54,21 @@ export default function ProductDetail() {
       <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {books.map((book) => (
           <div key={book.id} className="border p-4 rounded-lg shadow-md">
-            <h2 className="text-lg font-semibold mt-2">{book.title}</h2>
-            <p className="text-gray-600">Author: {book.author}</p>
-            <p className="text-gray-600">Price: ${book.price}</p>
+            <figure>
+                <Image
+                  src="/images/book1.jpg" // Image path relative to the 'public' folder
+                  alt="Book 1"
+                  width={500} // Define width
+                  height={500} // Define height
+                  className="h-96 w-full object-cover"
+                />
+            </figure>
+            <div className="p-4">
+              <h2 className="text-lg font-semibold mt-2">{book.title}</h2>
+              <p className="text-gray-600">Author: {book.author}</p>
+              <p className="text-gray-600">Price: ${book.price}</p>
+              <p className="text-gray-600">Description: {book.short_description}</p>
+           </div>
           </div>
         ))}
       </div>
