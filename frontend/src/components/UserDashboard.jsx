@@ -3,10 +3,11 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { useRouter } from "next/navigation"; // Updated import for Next.js 13+
 import { useClerk } from "@clerk/nextjs"; // Import useClerk for sign-out functionality
+import Image from "next/image";
 
 export default function UserDashboard() {
   const [items, setItems] = useState([]); // State to store items
-  const [newItem, setNewItem] = useState({ title: "", author: "", price: "" }); // State for new item form
+  const [newItem, setNewItem] = useState({ title: "", author: "", price: "", description: "", image: "" }); // State for new item form
   const [editItem, setEditItem] = useState(null); // State for editing an item
 
   const router = useRouter(); // Initialize Next.js router
@@ -51,7 +52,7 @@ export default function UserDashboard() {
       }
 
       setItems([...items, addedItem]);
-      setNewItem({ title: "", author: "", price: "" }); // Reset form
+      setNewItem({ title: "", author: "", price: "", description: "", image: "" }); // Reset form
     } catch (err) {
       console.error("Error adding item:", err);
     }
@@ -144,6 +145,22 @@ export default function UserDashboard() {
             onChange={handleInputChange}
             className="p-2 border rounded"
           />
+          <input
+            type="text"
+            name="short_description"
+            placeholder="Description"
+            value={newItem.short_description}
+            onChange={handleInputChange}
+            className="p-2 border rounded"
+          />
+          <input
+            type="text"
+            name="cover_image"
+            placeholder="Image URL"
+            value={newItem.cover_image}
+            onChange={handleInputChange}
+            className="p-2 border rounded"
+          />
           <button
             onClick={addItem}
             className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
@@ -182,6 +199,22 @@ export default function UserDashboard() {
               onChange={handleEditInputChange}
               className="p-2 border rounded"
             />
+            <input
+              type="text"
+              name="short_description"
+              placeholder="Description"
+              value={editItem.short_description}
+              onChange={handleEditInputChange}
+              className="p-2 border rounded"
+            />
+            <input
+              type="text"
+              name="cover_image"
+              placeholder="Image URL"
+              value={editItem.cover_image}
+              onChange={handleEditInputChange}
+              className="p-2 border rounded"
+            />
             <button
               onClick={updateItem}
               className="bg-green-500 text-white p-2 rounded hover:bg-green-600"
@@ -202,22 +235,34 @@ export default function UserDashboard() {
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {items.map((item) => (
           <div key={item.id} className="border p-4 rounded-lg shadow-md">
-            <h2 className="text-lg font-semibold">{item.title}</h2>
-            <p className="text-gray-600">Author: {item.author}</p>
-            <p className="text-gray-600">Price: ${item.price}</p>
-            <div className="mt-4 flex space-x-2">
-              <button
-                onClick={() => setEditItem(item)}
-                className="bg-yellow-500 text-white p-1 rounded hover:bg-yellow-600"
-              >
-                Edit
-              </button>
-              <button
-                onClick={() => deleteItem(item.id)}
-                className="bg-red-500 text-white p-1 rounded hover:bg-red-600"
-              >
-                Delete
-              </button>
+             <figure>
+                  <Image
+                      src="/images/book1.jpg" // Image path relative to the 'public' folder
+                       alt="Book 1"
+                       width={500} // Define width
+                       height={500} // Define height
+                       className="h-96 w-full object-cover"
+                      />
+                </figure>
+                <div className="p-4">
+                 <h2 className="text-lg font-semibold">{item.title}</h2>
+                  <p className="text-gray-600">Author: {item.author}</p>
+                  <p className="text-gray-600">Price: ${item.price}</p>
+                  <p className="text-gray-600">Description: {item.short_description}</p>
+                </div>
+               <div className="mt-4 flex space-x-2">
+                 <button
+                   onClick={() => setEditItem(item)}
+                   className="bg-yellow-500 text-white p-1 rounded hover:bg-yellow-600"
+                  >
+                    Edit
+                  </button>
+                 <button
+                   onClick={() => deleteItem(item.id)}
+                   className="bg-red-500 text-white p-1 rounded hover:bg-red-600"
+                  >
+                   Delete
+                 </button>
             </div>
           </div>
         ))}
