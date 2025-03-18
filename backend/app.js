@@ -79,6 +79,7 @@ app.put("/books/:id", async (req, res) => {
   }
 
   try {
+    // User must be authenticated before updating a book
     const [result] = await pool.query(
       "UPDATE books SET title = ?, author = ?, price = ?, short_description = ?, cover_image = ? WHERE id = ?",
       [title, author, price, short_description, cover_image, id]
