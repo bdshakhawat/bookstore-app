@@ -3,8 +3,9 @@ import Image from "next/image";
 import Link from "next/link";
 const BookCard = ({book}) => {
     return (
-      <div className="w-full bg-white shadow-md rounded-lg overflow-hidden">
-          <figure>
+      <div className="w-full bg-white shadow-md rounded-lg overflow-hidden relative group">
+        {/* Book image */}
+          <figure className="relative">
             <Image
               src="/images/book1.jpg" 
               width={400}
@@ -13,6 +14,7 @@ const BookCard = ({book}) => {
               className="rounded-t-lg h-64 object-cover"
            />
          </figure>
+        {/* Book details */}
          <div className="p-3">
         
            <h2 className="text-xl font-bold mt-4 text-center">
@@ -42,7 +44,30 @@ const BookCard = ({book}) => {
           </div> 
         </div>
       </div>
+      {/* Hover overlay */}
+     <div className="absolute inset-0 bg-black bg-opacity-80 text-white p-4 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+        <h2 className="text-xl font-bold text-center">
+          {book.title.length > 30
+            ? book.title.slice(0, 30) + "..."
+            : book.title}
+        </h2>
+        <p className="text-gray-300 mt-2">
+          {book.short_description} {/* Display full description on hover */}
+        </p>
+        <div className="mt-4">
+          <p className="text-sm text-gray-300">Author: {book.author}</p>
+          <p className="text-sm text-gray-300">Rating: {book.rating || "N/A"}</p> {/* Add rating if available */}
+        </div>
+        <div className="mt-4 text-center">
+          <Link href={`/books/${book.id}`}>
+            <button className="text-teal-600 bg-white py-1 px-3 rounded-full">
+              View Details
+            </button>
+          </Link>
+        </div>
+      </div>
     </div>
+    
 
     );
 };

@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import BookCard from "@/components/ui/BookCard";
 import SearchBar from "@/components/ui/SearchBar";
 import FilterBar from "@/components/ui/FilterBar";
@@ -11,15 +11,20 @@ const BookstPage = () => {
   const [filter, setFilter] = useState({ category: "", sort: "newest" });
   const [page, setPage] = useState(1);
 
-  const fetchBooks = async () => {
+
+  // Memoize fetchBooks using useCallback
+  const fetchBooks = useCallback(async () => {
     const res = await fetch(`http://localhost:5000/books?page=${page}`);
     const data = await res.json();
     setBooks(page === 1 ? data : [...books, ...data]);
-  };
+    //  dependencies 
+  }, [page, books]); 
+
+  
 
   useEffect(() => {
     fetchBooks();
-  }, [page]);
+  }, [fetchBooks]);
 
   const filteredBooks = books
     .filter((book) =>

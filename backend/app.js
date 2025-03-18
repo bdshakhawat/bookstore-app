@@ -101,7 +101,7 @@ app.delete("/books/:id", async (req, res) => {
 
   try {
     const [result] = await pool.query("DELETE FROM books WHERE id = ?", [id]);
-
+  //  User must be authenticated before operating any delete requests
     if (result.affectedRows === 0) {
       return res.status(404).json({ error: "Book not found" });
     }
