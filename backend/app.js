@@ -1,6 +1,7 @@
 
 import express from 'express';
 import cors from "cors";
+import { requireAuth } from './middleware/clerkAuth.js';
 import pool from './db.js'; // Import the database connection
 const app = express();
 app.use(cors()); 
@@ -96,7 +97,8 @@ app.put("/books/:id", async (req, res) => {
 });
 
 // Route to delete a book (DELETE)
-app.delete("/books/:id", async (req, res) => {
+
+app.delete("/books/:id",  async (req, res) => {
   const { id } = req.params;
 
   try {
