@@ -5,7 +5,6 @@ import SearchBar from "@/components/ui/SearchBar";
 import FilterBar from "@/components/ui/FilterBar";
 import Pagination from "@/components/ui/Pagination";
 
-/*************  ✨ Codeium Command 🌟  *************/
 const BookstPage = () => {
   const [books, setBooks] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -20,12 +19,12 @@ const BookstPage = () => {
 
   useEffect(() => {
     const fetchBooks = async () => {
-      const res = await fetch(`http://localhost:5000/books?page=${page}`);
+      const res = await fetch(`http://localhost:5000/books?page=${page}&sort=newest`);
       const data = await res.json();
       setBooks(page === 1 ? data : [...books, ...data]);
     };
     fetchBooks();
-  }, [page]);
+  }, [page, books]);
 
   const filteredBooks = books
     .filter((book) =>
@@ -55,6 +54,5 @@ const BookstPage = () => {
     </div>
   );
 };
-/******  c396f116-37e8-47d9-bb83-b31ea1e53ca0  *******/
 
 export default BookstPage;

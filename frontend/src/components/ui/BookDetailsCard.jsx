@@ -3,10 +3,7 @@ import Image from "next/image";
 const BookDetailsCard = ({ book} ) => {
   return (
     <div className="w-2/3 bg-white shadow-lg rounded-lg mx-auto p-6">
-      {/* <p className="flex items-center justify-center mx-auto text-teal-500 bg-teal-100 w-fit px-3 py-1 rounded-full">
-        <FaCalendar className="mr-2" />
-        {blog.publish_date}
-      </p> */}
+      
       <h2 className="text-center text-4xl font-semibold my-5">{book.title}</h2>
        <div className="flex items-center justify-center bg-gray-100 mb-5 py-2 rounded-lg gap-2">
        
