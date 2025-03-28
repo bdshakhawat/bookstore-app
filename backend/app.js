@@ -4,7 +4,8 @@
 import express from 'express';
 import cors from "cors";
 import { ClerkExpressWithAuth } from "@clerk/clerk-sdk-node";
-import pool from './db.js'; // Import the database connection
+// Import the database connection
+import pool from './db.js'; 
 
 const app = express();
 app.use(cors());
@@ -19,7 +20,6 @@ app.get('/', (req, res) => {
   res.send('Welcome to the Book Store API!');
 });
 
-// Route to create a new book
 // Route to get all books (sorted by newest first)
 app.get("/books", async (req, res) => {
   try {
@@ -39,61 +39,44 @@ app.get("/books", async (req, res) => {
   }
 });
 
-// Route to create a new book (updated to include timestamp)
+// Route to create a new book (updated to include timestamp, with optional fields)
 app.post("/books", requireAuth, async (req, res) => {
   try {
     const { title, author, price, short_description, cover_image } = req.body;
     const user_id = req.auth.userId;
-    const created_at = new Date(); // Add current timestamp
+    const created_at = new Date();
 
+    // Required fields validation
     if (!user_id) {
       return res.status(401).json({ error: "Unauthorized: User must be logged in" });
     }
 
-    if (!title || !author || !price || !short_description || !cover_image) {
-      return res.status(400).json({ error: "All fields are required" });
+    if (!title || !author || !price) {  
+      // Removed short_description and cover_image from required check
+      return res.status(400).json({ error: "Title, author, and price are required" });
     }
 
+    // Set default values for optional fields
+    const description = short_description || "No description available";
+    // Default image path
+    const image = cover_image || "/images/default-book.jpg"; 
     const [result] = await pool.query(
       "INSERT INTO books (title, author, price, short_description, cover_image, user_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
-      [title, author, price, short_description, cover_image, user_id, created_at]
+      [title, author, price, description, image, user_id, created_at]
     );
 
     res.status(201).json({ 
       message: "Book created successfully", 
       bookId: result.insertId,
-      // Return the creation timestamp
-      created_at 
+      created_at
     });
   } catch (err) {
     console.error("Error creating book:", err);
     res.status(500).json({ error: "Failed to create book" });
   }
 });
-// app.post("/books", requireAuth, async (req, res) => {
-//   try {
-//     const { title, author, price, short_description, cover_image } = req.body;
-//     const user_id = req.auth.userId; // Get authenticated user's ID from Clerk
 
-//     if (!user_id) {
-//       return res.status(401).json({ error: "Unauthorized: User must be logged in" });
-//     }
 
-//     if (!title || !author || !price || !short_description || !cover_image) {
-//       return res.status(400).json({ error: "All fields are required" });
-//     }
-
-//     const [result] = await pool.query(
-//       "INSERT INTO books (title, author, price, short_description, cover_image, user_id) VALUES (?, ?, ?, ?, ?, ?)",
-//       [title, author, price, short_description, cover_image, user_id]
-//     );
-
-//     res.status(201).json({ message: "Book created successfully", bookId: result.insertId });
-//   } catch (err) {
-//     console.error("Error creating book:", err);
-//     res.status(500).json({ error: "Failed to create book" });
-//   }
-// });
 
 // Route to get all books
 app.get("/books", async (req, res) => {
@@ -113,15 +96,7 @@ app.get("/books", async (req, res) => {
     res.status(500).json({ error: "Failed to get books" });
   }
 });
-// app.get("/books", async (req, res) => {
-//   try {
-//     const [rows] = await pool.query("SELECT * FROM books");
-//     res.status(200).json(rows);
-//   } catch (err) {
-//     console.error("Error fetching books:", err);
-//     res.status(500).json({ error: "Failed to get books" });
-//   }
-// });
+
 
 
 // Route to get ONLY the logged-in user's books

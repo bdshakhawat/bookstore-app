@@ -6,7 +6,7 @@ import { useClerk, useAuth } from "@clerk/nextjs";
 import Image from "next/image";
 
 export default function UserDashboard() {
-  const [userBooks, setUserBooks] = useState([]); // State for user's books
+  const [userBooks, setUserBooks] = useState([]);
   const [newBook, setNewBook] = useState({
     title: "",
     author: "",
@@ -14,14 +14,18 @@ export default function UserDashboard() {
     short_description: "",
     cover_image: "",
   });
-  const [editBook, setEditBook] = useState(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [currentEditBook, setCurrentEditBook] = useState(null);
+  const [bookToDelete, setBookToDelete] = useState(null);
+  const [error, setError] = useState(null);
+  const [successMessage, setSuccessMessage] = useState(null);
 
   const router = useRouter();
   const { signOut } = useClerk();
-  // Get userId directly from useAuth
-  const { getToken, userId } = useAuth(); 
+  const { getToken, userId } = useAuth();
 
-  // Fetch ONLY the logged-in user's books
+  // Fetch user's books
   const fetchUserBooks = async () => {
     try {
       const token = await getToken();
@@ -40,20 +44,28 @@ export default function UserDashboard() {
     fetchUserBooks();
   }, []);
 
-  // Add a new book (automatically sets user_id)
+  // Add a new book
   const addBook = async () => {
     try {
+      if (!newBook.title || !newBook.author || !newBook.price) {
+        setError("Title, author, and price are required");
+        return;
+      }
+      
       const token = await getToken();
-      const response = await axios.post(
+      await axios.post(
         "http://localhost:5000/books",
-        { ...newBook, user_id: userId }, // Include user_id from Clerk
+        { ...newBook, user_id: userId },
         {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         }
       );
-      fetchUserBooks(); // Refresh the list
+      
+      setSuccessMessage("Book added successfully!");
+      setTimeout(() => setSuccessMessage(null), 3000);
+      fetchUserBooks();
       setNewBook({
         title: "",
         author: "",
@@ -61,43 +73,72 @@ export default function UserDashboard() {
         short_description: "",
         cover_image: "",
       });
+      setError(null);
     } catch (err) {
+      setError(err.response?.data?.error || "Failed to add book");
       console.error("Error adding book:", err);
     }
   };
 
-  // Update a book (checks ownership on backend)
-  const updateBook = async () => {
+  // Open edit modal
+  const handleEditClick = (book) => {
+    setCurrentEditBook(book);
+    setIsEditModalOpen(true);
+    setError(null);
+  };
+
+  // Open delete confirmation modal
+  const handleDeleteClick = (book) => {
+    setBookToDelete(book);
+    setIsDeleteModalOpen(true);
+  };
+
+  // Update book
+  const handleUpdateBook = async (updatedBook) => {
     try {
+      setError(null);
+      if (!updatedBook.title || !updatedBook.author || !updatedBook.price) {
+        setError("Title, author, and price are required");
+        return;
+      }
+
       const token = await getToken();
       await axios.put(
-        `http://localhost:5000/books/${editBook.id}`,
-        editBook,
+        `http://localhost:5000/books/${updatedBook.id}`,
+        updatedBook,
         {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         }
       );
-      fetchUserBooks(); // Refresh the list
-      setEditBook(null);
+
+      setSuccessMessage("Book updated successfully!");
+      setTimeout(() => setSuccessMessage(null), 3000);
+      fetchUserBooks();
+      setIsEditModalOpen(false);
     } catch (err) {
+      setError(err.response?.data?.error || "Failed to update book");
       console.error("Error updating book:", err);
     }
   };
 
-  // Delete a book (checks ownership on backend)
-  const deleteBook = async (id) => {
+  // Delete book
+  const confirmDeleteBook = async () => {
     try {
       const token = await getToken();
-      await axios.delete(`http://localhost:5000/books/${id}`, {
+      await axios.delete(`http://localhost:5000/books/${bookToDelete.id}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
-      fetchUserBooks(); // Refresh the list
+      setSuccessMessage("Book deleted successfully!");
+      setTimeout(() => setSuccessMessage(null), 3000);
+      fetchUserBooks();
+      setIsDeleteModalOpen(false);
     } catch (err) {
       console.error("Error deleting book:", err);
+      setIsDeleteModalOpen(false);
     }
   };
 
@@ -105,189 +146,304 @@ export default function UserDashboard() {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setNewBook({ ...newBook, [name]: value });
+    setError(null);
   };
 
-  const handleEditInputChange = (e) => {
-    const { name, value } = e.target;
-    setEditBook({ ...editBook, [name]: value });
+  // Edit Modal Component
+  const EditBookModal = ({ book, onClose, onUpdate, error }) => {
+    const [editedBook, setEditedBook] = useState(book);
+
+    const handleChange = (e) => {
+      const { name, value } = e.target;
+      setEditedBook(prev => ({ ...prev, [name]: value }));
+    };
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="bg-white rounded-lg p-6 w-full max-w-md">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold">Edit Book</h3>
+            <button 
+              onClick={onClose}
+              className="text-gray-500 hover:text-gray-700"
+            >
+              &times;
+            </button>
+          </div>
+          
+          {error && (
+            <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+              {error}
+            </div>
+          )}
+
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Title <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                name="title"
+                required
+                value={editedBook.title}
+                onChange={handleChange}
+                className="w-full p-2 border rounded"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Author <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                name="author"
+                required
+                value={editedBook.author}
+                onChange={handleChange}
+                className="w-full p-2 border rounded"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Price <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                name="price"
+                required
+                value={editedBook.price}
+                onChange={handleChange}
+                className="w-full p-2 border rounded"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Description
+              </label>
+              <textarea
+                name="short_description"
+                value={editedBook.short_description}
+                onChange={handleChange}
+                className="w-full p-2 border rounded h-24"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Cover Image URL
+              </label>
+              <input
+                type="text"
+                name="cover_image"
+                value={editedBook.cover_image}
+                onChange={handleChange}
+                className="w-full p-2 border rounded"
+              />
+            </div>
+
+            <div className="flex space-x-4">
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex-1 bg-gray-300 text-gray-800 py-2 rounded hover:bg-gray-400"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => onUpdate(editedBook)}
+                className="flex-1 bg-blue-500 text-white py-2 rounded hover:bg-blue-600"
+              >
+                Update
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   };
 
-  // Sign out and redirect
-  const handleSignOut = async () => {
-    await signOut();
-    router.push("/");
-  };
-  const handleSettings = () => {
-    router.push("/settings");
+  // Delete Confirmation Modal
+  const DeleteConfirmationModal = ({ book, onClose, onConfirm }) => {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="bg-white rounded-lg p-6 w-full max-w-md">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold">Confirm Delete</h3>
+            <button 
+              onClick={onClose}
+              className="text-gray-500 hover:text-gray-700"
+            >
+              &times;
+            </button>
+          </div>
+          
+          <p className="mb-6">Are you sure you want to delete "<span className="font-semibold">{book?.title}</span>" by {book?.author}?</p>
+          
+          <div className="flex space-x-4">
+            <button
+              onClick={onClose}
+              className="flex-1 bg-gray-300 text-gray-800 py-2 rounded hover:bg-gray-400"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={onConfirm}
+              className="flex-1 bg-red-500 text-white py-2 rounded hover:bg-red-600"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold text-center mb-6">Your Books</h1>
+      {/* Success Message */}
+      {successMessage && (
+        <div className="fixed top-4 right-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded shadow-lg z-50">
+          {successMessage}
+        </div>
+      )}
 
-      
-       <div className="flex justify-end space-x-4 mb-6">
+      <h1 className="text-2xl font-bold text-center mb-6">Dashboard</h1>
+
+      <div className="flex justify-end space-x-4 mb-6">
         <button
-          onClick={handleSettings}
+          onClick={() => router.push("/settings")}
           className="bg-gray-500 text-white p-2 rounded hover:bg-gray-600"
         >
           Settings
         </button>
         <button
-          onClick={handleSignOut}
+          onClick={() => {
+            signOut();
+            router.push("/");
+          }}
           className="bg-red-500 text-white p-2 rounded hover:bg-red-600"
         >
           Sign Out
         </button>
-      </div> 
+      </div>
 
       {/* Add New Book Form */}
       <div className="mb-8">
         <h2 className="text-xl font-semibold mb-4">Add New Book</h2>
+        <p className="text-sm text-gray-500 mb-4">
+          Fields marked with <span className="text-red-500">*</span> are required
+        </p>
+        
+        {error && (
+          <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+            {error}
+          </div>
+        )}
+
         <div className="flex flex-col space-y-4">
-          <label htmlFor="field-id" className="text-sm font-medium text-gray-700 mb-1">
-            Title
-           </label>
-          <input
-            id="field-id"
-            type="text"
-            name="title"
-            placeholder="Title"
-            value={newBook.title || ""}
-            onChange={handleInputChange}
-            className="p-2 border rounded"
-          />
-          <label htmlFor="field-id" className="text-sm font-medium text-gray-700 mb-1">
-            Author Name
-           </label>
-          <input
-            id="field-id"
-            type="text"
-            name="author"
-            placeholder="Author"
-            value={newBook.author || ""}
-            onChange={handleInputChange}
-            className="p-2 border rounded"
-          />
-          <label htmlFor="field-id" className="text-sm font-medium text-gray-700 mb-1">
-            Price
-           </label>
-          <input
-           id="field-id"
-            type="text"
-            name="price"
-            placeholder="Price"
-            value={newBook.price || ""}
-            onChange={handleInputChange}
-            className="p-2 border rounded"
-          />
-          <label htmlFor="field-id" className="text-sm font-medium text-gray-700 mb-1">
-            Description
-           </label>
-          <input
-           id="field-id"
-            type="text"
-            name="short_description"
-            placeholder="Description"
-            value={newBook.short_description || ""}
-            onChange={handleInputChange}
-            className="p-2 border rounded"
-          />
-          <label htmlFor="field-id" className="text-sm font-medium text-gray-700 mb-1">
-            Image
-           </label>
-          <input
-            id="field-id"
-            type="text"
-            name="cover_image"
-            placeholder="Image URL"
-            value={newBook.cover_image || ""}
-            onChange={handleInputChange}
-            className="p-2 border rounded"
-          />
+          <div className="flex flex-col">
+            <label htmlFor="title" className="text-sm font-medium text-gray-700 mb-1">
+              Title <span className="text-red-500">*</span>
+            </label>
+            <input
+              id="title"
+              type="text"
+              name="title"
+              required
+              placeholder="Book title"
+              value={newBook.title}
+              onChange={handleInputChange}
+              className="p-2 border rounded"
+            />
+          </div>
+
+          <div className="flex flex-col">
+            <label htmlFor="author" className="text-sm font-medium text-gray-700 mb-1">
+              Author <span className="text-red-500">*</span>
+            </label>
+            <input
+              id="author"
+              type="text"
+              name="author"
+              required
+              placeholder="Author name"
+              value={newBook.author}
+              onChange={handleInputChange}
+              className="p-2 border rounded"
+            />
+          </div>
+
+          <div className="flex flex-col">
+            <label htmlFor="price" className="text-sm font-medium text-gray-700 mb-1">
+              Price <span className="text-red-500">*</span>
+            </label>
+            <input
+              id="price"
+              type="text"
+              name="price"
+              required
+              placeholder="0.00"
+              value={newBook.price}
+              onChange={handleInputChange}
+              className="p-2 border rounded"
+            />
+          </div>
+
+          <div className="flex flex-col">
+            <label htmlFor="description" className="text-sm font-medium text-gray-700 mb-1">
+              Description
+            </label>
+            <textarea
+              id="description"
+              name="short_description"
+              placeholder="Book description (optional)"
+              value={newBook.short_description}
+              onChange={handleInputChange}
+              className="p-2 border rounded h-24"
+            />
+          </div>
+
+          <div className="flex flex-col">
+            <label htmlFor="image" className="text-sm font-medium text-gray-700 mb-1">
+              Cover Image URL
+            </label>
+            <input
+              id="image"
+              type="text"
+              name="cover_image"
+              placeholder="Image URL (optional)"
+              value={newBook.cover_image}
+              onChange={handleInputChange}
+              className="p-2 border rounded"
+            />
+          </div>
+
           <button
             onClick={addBook}
-            className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
+            className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600 mt-4"
           >
             Add Book
           </button>
         </div>
       </div>
 
-      {/* Edit Book Form */}
-      {editBook && (
-        <div className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">Edit Book</h2>
-          <div className="flex flex-col space-y-4">
-            <input
-              type="text"
-              name="title"
-              placeholder="Title"
-              value={editBook.title  || ""}  
-              onChange={handleEditInputChange}
-              className="p-2 border rounded"
-            />
-            <input
-              type="text"
-              name="author"
-              placeholder="Author"
-              value={editBook.author || ""}
-              onChange={handleEditInputChange}
-              className="p-2 border rounded"
-            />
-            <input
-              type="text"
-              name="price"
-              placeholder="Price"
-              value={editBook.price || ""}
-              onChange={handleEditInputChange}
-              className="p-2 border rounded"
-            />
-            <input
-              type="text"
-              name="short_description"
-              placeholder="Description"
-              value={editBook.short_description || ""}
-              onChange={handleEditInputChange}
-              className="p-2 border rounded"
-            />
-            <input
-              type="text"
-              name="cover_image"
-              placeholder="Image URL"
-              value={editBook.cover_image || ""}
-              onChange={handleEditInputChange}
-              className="p-2 border rounded"
-            />
-            <button
-              onClick={updateBook}
-              className="bg-green-500 text-white p-2 rounded hover:bg-green-600"
-            >
-              Update Book
-            </button>
-            <button
-              onClick={() => setEditBook(null)}
-              className="bg-gray-500 text-white p-2 rounded hover:bg-gray-600"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* Display User's Books */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {userBooks.map((book) => (
           <div key={book.id} className="border p-4 rounded-lg shadow-md">
-           
             <figure>
               <Image
                 src="/images/book1.jpg"
-                alt={book.title ? `Cover image for ${book.title}` : "Book cover image"}
-               width={500}
-               height={500}
+                 alt={book.title ? `Cover image for ${book.title}` : "Book cover image"}
+                width={500}
+                height={500}
                 className="h-96 w-full object-cover"
-             />            
+              />
             </figure>
             <div className="p-4">
               <h2 className="text-lg font-semibold">{book.title}</h2>
@@ -297,13 +453,13 @@ export default function UserDashboard() {
             </div>
             <div className="mt-4 flex space-x-2">
               <button
-                onClick={() => setEditBook(book)}
+                onClick={() => handleEditClick(book)}
                 className="bg-yellow-500 text-white p-1 rounded hover:bg-yellow-600"
               >
                 Edit
               </button>
               <button
-                onClick={() => deleteBook(book.id)}
+                onClick={() => handleDeleteClick(book)}
                 className="bg-red-500 text-white p-1 rounded hover:bg-red-600"
               >
                 Delete
@@ -312,333 +468,449 @@ export default function UserDashboard() {
           </div>
         ))}
       </div>
+
+      {/* Edit Book Modal */}
+      {isEditModalOpen && (
+        <EditBookModal
+          book={currentEditBook}
+          onClose={() => setIsEditModalOpen(false)}
+          onUpdate={handleUpdateBook}
+          error={error}
+        />
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {isDeleteModalOpen && (
+        <DeleteConfirmationModal
+          book={bookToDelete}
+          onClose={() => setIsDeleteModalOpen(false)}
+          onConfirm={confirmDeleteBook}
+        />
+      )}
     </div>
   );
 }
 
 
 
-// ================================================================================================
-
+// ===============================================================================
 
 // "use client";
 // import { useEffect, useState } from "react";
 // import axios from "axios";
-// import { useRouter } from "next/navigation"; // Updated import for Next.js 13+
-// import { useClerk, useAuth } from "@clerk/nextjs"; // Import useAuth for token
+// import { useRouter } from "next/navigation";
+// import { useClerk, useAuth } from "@clerk/nextjs";
 // import Image from "next/image";
 
 // export default function UserDashboard() {
-//   const [items, setItems] = useState([]); // State to store items
-//   const [newItem, setNewItem] = useState({
+//   const [userBooks, setUserBooks] = useState([]);
+//   const [newBook, setNewBook] = useState({
 //     title: "",
 //     author: "",
 //     price: "",
 //     short_description: "",
 //     cover_image: "",
-//   }); // State for new item form
-//   const [editItem, setEditItem] = useState({
-//     id: null,
-//     title: "",
-//     author: "",
-//     price: "",
-//     short_description: "",
-//     cover_image: "",
-//   }); // State for editing an item
+//   });
+//   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+//   const [currentEditBook, setCurrentEditBook] = useState(null);
+//   const [error, setError] = useState(null);
+//   const [successMessage, setSuccessMessage] = useState(null);
 
-//   const router = useRouter(); // Initialize Next.js router
-//   const { signOut } = useClerk(); // Initialize Clerk signOut function
-//   const { getToken } = useAuth(); // Use useAuth to get the session token
+//   const router = useRouter();
+//   const { signOut } = useClerk();
+//   const { getToken, userId } = useAuth();
 
-//   // Fetch all items on component mount
-//   useEffect(() => {
-//     fetchItems();
-//   }, []);
-
-//   // Fetch items from the API
-//   const fetchItems = async () => {
+//   // Fetch user's books
+//   const fetchUserBooks = async () => {
 //     try {
-//       const response = await axios.get("http://localhost:5000/books");
-//       setItems(response.data);
-//     } catch (err) {
-//       console.error("Error fetching items:", err);
-//     }
-//   };
-
-//   // Handle form input change for new item
-//   const handleInputChange = (e) => {
-//     const { name, value } = e.target;
-//     setNewItem({ ...newItem, [name]: value });
-//   };
-
-//   // Handle form input change for editing an item
-//   const handleEditInputChange = (e) => {
-//     const { name, value } = e.target;
-//     setEditItem({ ...editItem, [name]: value });
-//   };
-
-//   // Add a new item
-//   const addItem = async () => {
-//     try {
-//       const token = await getToken(); // Get the Clerk session token
-//       const response = await axios.post(
-//         "http://localhost:5000/books",
-//         newItem,
-//         {
-//           headers: {
-//             Authorization: `Bearer ${token}`, // Include the token in the headers
-//           },
-//         }
-//       );
-//       const addedItem = response.data;
-//       console.log("Added item:", addedItem);
-
-//       setItems([...items, addedItem]);
-//       setNewItem({
-//         title: "",
-//         author: "",
-//         price: "",
-//         short_description: "",
-//         cover_image: "",
-//         // User id should be added
-//         // user_id
-//       }); // Reset form
-//     } catch (err) {
-//       console.error("Error adding item:", err);
-//       alert("Failed to add item. Please try again.");
-//     }
-//   };
-
-//   // Update an existing item
-//   const updateItem = async () => {
-//     try {
-//       const token = await getToken(); // Get the Clerk session token
-//       await axios.put(
-//         `http://localhost:5000/books/${editItem.id}`,
-//         editItem,
-//         {
-//           headers: {
-//             Authorization: `Bearer ${token}`, // Include the token in the headers
-//           },
-//         }
-//       );
-//       const updatedItems = items.map((item) =>
-//         item.id === editItem.id ? editItem : item
-//       );
-//       setItems(updatedItems);
-//       setEditItem({
-//         id: null,
-//         title: "",
-//         author: "",
-//         price: "",
-//         short_description: "",
-//         cover_image: "",
-//       }); // Reset edit form
-//     } catch (err) {
-//       console.error("Error updating item:", err);
-//       alert("Failed to update item. Please try again.");
-//     }
-//   };
-
-//   // Delete an item
-//   const deleteItem = async (id) => {
-//     try {
-//       const token = await getToken(); // Get the Clerk session token
-//       await axios.delete(`http://localhost:5000/books/${id}`, {
+//       const token = await getToken();
+//       const response = await axios.get("http://localhost:5000/my-books", {
 //         headers: {
-//           Authorization: `Bearer ${token}`, // Include the token in the headers
+//           Authorization: `Bearer ${token}`,
 //         },
 //       });
-//       const filteredItems = items.filter((item) => item.id !== id);
-//       setItems(filteredItems);
+//       setUserBooks(response.data);
 //     } catch (err) {
-//       console.error("Error deleting item:", err);
-//       alert("Failed to delete item. Please try again.");
+//       console.error("Error fetching user's books:", err);
 //     }
 //   };
 
-//   // Handle sign out
-//   const handleSignOut = async () => {
-//     await signOut();
-//     router.push("/");
+//   useEffect(() => {
+//     fetchUserBooks();
+//   }, []);
+
+//   // Add a new book
+//   const addBook = async () => {
+//     try {
+//       if (!newBook.title || !newBook.author || !newBook.price) {
+//         setError("Title, author, and price are required");
+//         return;
+//       }
+      
+//       const token = await getToken();
+//       await axios.post(
+//         "http://localhost:5000/books",
+//         { ...newBook, user_id: userId },
+//         {
+//           headers: {
+//             Authorization: `Bearer ${token}`,
+//           },
+//         }
+//       );
+      
+//       setSuccessMessage("Book added successfully!");
+//       setTimeout(() => setSuccessMessage(null), 3000);
+//       fetchUserBooks();
+//       setNewBook({
+//         title: "",
+//         author: "",
+//         price: "",
+//         short_description: "",
+//         cover_image: "",
+//       });
+//       setError(null);
+//     } catch (err) {
+//       setError(err.response?.data?.error || "Failed to add book");
+//       console.error("Error adding book:", err);
+//     }
 //   };
 
-//   // Handle settings navigation
-//   const handleSettings = () => {
-//     router.push("/usersettings");
+//   // Open edit modal
+//   const handleEditClick = (book) => {
+//     setCurrentEditBook(book);
+//     setIsEditModalOpen(true);
+//     setError(null);
+//   };
+
+//   // Update book
+//   const handleUpdateBook = async (updatedBook) => {
+//     try {
+//       setError(null);
+//       if (!updatedBook.title || !updatedBook.author || !updatedBook.price) {
+//         setError("Title, author, and price are required");
+//         return;
+//       }
+
+//       const token = await getToken();
+//       await axios.put(
+//         `http://localhost:5000/books/${updatedBook.id}`,
+//         updatedBook,
+//         {
+//           headers: {
+//             Authorization: `Bearer ${token}`,
+//           },
+//         }
+//       );
+
+//       setSuccessMessage("Book updated successfully!");
+//       setTimeout(() => setSuccessMessage(null), 3000);
+//       fetchUserBooks();
+//       setIsEditModalOpen(false);
+//     } catch (err) {
+//       setError(err.response?.data?.error || "Failed to update book");
+//       console.error("Error updating book:", err);
+//     }
+//   };
+
+//   // Delete book
+//   const deleteBook = async (id) => {
+//     try {
+//       const token = await getToken();
+//       await axios.delete(`http://localhost:5000/books/${id}`, {
+//         headers: {
+//           Authorization: `Bearer ${token}`,
+//         },
+//       });
+//       setSuccessMessage("Book deleted successfully!");
+//       setTimeout(() => setSuccessMessage(null), 3000);
+//       fetchUserBooks();
+//     } catch (err) {
+//       console.error("Error deleting book:", err);
+//     }
+//   };
+
+//   // Handle input changes
+//   const handleInputChange = (e) => {
+//     const { name, value } = e.target;
+//     setNewBook({ ...newBook, [name]: value });
+//     setError(null);
+//   };
+
+//   // Edit Modal Component
+//   const EditBookModal = ({ book, onClose, onUpdate, error }) => {
+//     const [editedBook, setEditedBook] = useState(book);
+
+//     const handleChange = (e) => {
+//       const { name, value } = e.target;
+//       setEditedBook(prev => ({ ...prev, [name]: value }));
+//     };
+
+//     return (
+//       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+//         <div className="bg-white rounded-lg p-6 w-full max-w-md">
+//           <div className="flex justify-between items-center mb-4">
+//             <h3 className="text-lg font-semibold">Edit Book</h3>
+//             <button 
+//               onClick={onClose}
+//               className="text-gray-500 hover:text-gray-700"
+//             >
+//               &times;
+//             </button>
+//           </div>
+          
+//           {error && (
+//             <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+//               {error}
+//             </div>
+//           )}
+
+//           <div className="space-y-4">
+//             <div>
+//               <label className="block text-sm font-medium text-gray-700 mb-1">
+//                 Title <span className="text-red-500">*</span>
+//               </label>
+//               <input
+//                 type="text"
+//                 name="title"
+//                 required
+//                 value={editedBook.title}
+//                 onChange={handleChange}
+//                 className="w-full p-2 border rounded"
+//               />
+//             </div>
+
+//             <div>
+//               <label className="block text-sm font-medium text-gray-700 mb-1">
+//                 Author <span className="text-red-500">*</span>
+//               </label>
+//               <input
+//                 type="text"
+//                 name="author"
+//                 required
+//                 value={editedBook.author}
+//                 onChange={handleChange}
+//                 className="w-full p-2 border rounded"
+//               />
+//             </div>
+
+//             <div>
+//               <label className="block text-sm font-medium text-gray-700 mb-1">
+//                 Price <span className="text-red-500">*</span>
+//               </label>
+//               <input
+//                 type="text"
+//                 name="price"
+//                 required
+//                 value={editedBook.price}
+//                 onChange={handleChange}
+//                 className="w-full p-2 border rounded"
+//               />
+//             </div>
+
+//             <div>
+//               <label className="block text-sm font-medium text-gray-700 mb-1">
+//                 Description
+//               </label>
+//               <textarea
+//                 name="short_description"
+//                 value={editedBook.short_description}
+//                 onChange={handleChange}
+//                 className="w-full p-2 border rounded h-24"
+//               />
+//             </div>
+
+//             <div>
+//               <label className="block text-sm font-medium text-gray-700 mb-1">
+//                 Cover Image URL
+//               </label>
+//               <input
+//                 type="text"
+//                 name="cover_image"
+//                 value={editedBook.cover_image}
+//                 onChange={handleChange}
+//                 className="w-full p-2 border rounded"
+//               />
+//             </div>
+
+//             <div className="flex space-x-4">
+//               <button
+//                 type="button"
+//                 onClick={onClose}
+//                 className="flex-1 bg-gray-300 text-gray-800 py-2 rounded hover:bg-gray-400"
+//               >
+//                 Cancel
+//               </button>
+//               <button
+//                 type="button"
+//                 onClick={() => onUpdate(editedBook)}
+//                 className="flex-1 bg-blue-500 text-white py-2 rounded hover:bg-blue-600"
+//               >
+//                 Update
+//               </button>
+//             </div>
+//           </div>
+//         </div>
+//       </div>
+//     );
 //   };
 
 //   return (
 //     <div className="container mx-auto p-4">
-//       <h1 className="text-2xl font-bold text-center mb-6">User Dashboard</h1>
+//       {/* Success Message */}
+//       {successMessage && (
+//         <div className="fixed top-4 right-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded shadow-lg z-50">
+//           {successMessage}
+//         </div>
+//       )}
 
-//       {/* Sign Out and Settings Buttons */}
+//       <h1 className="text-2xl font-bold text-center mb-6">Dashboard</h1>
+
 //       <div className="flex justify-end space-x-4 mb-6">
 //         <button
-//           onClick={handleSettings}
+//           onClick={() => router.push("/settings")}
 //           className="bg-gray-500 text-white p-2 rounded hover:bg-gray-600"
 //         >
 //           Settings
 //         </button>
 //         <button
-//           onClick={handleSignOut}
+//           onClick={() => {
+//             signOut();
+//             router.push("/");
+//           }}
 //           className="bg-red-500 text-white p-2 rounded hover:bg-red-600"
 //         >
 //           Sign Out
 //         </button>
 //       </div>
 
-//       {/* Add New Item Form */}
+//       {/* Add New Book Form */}
 //       <div className="mb-8">
-//         <h2 className="text-xl font-semibold mb-4">Add New Item</h2>
+//         <h2 className="text-xl font-semibold mb-4">Add New Book</h2>
+//         <p className="text-sm text-gray-500 mb-4">
+//           Fields marked with <span className="text-red-500">*</span> are required
+//         </p>
+        
+//         {error && (
+//           <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+//             {error}
+//           </div>
+//         )}
+
 //         <div className="flex flex-col space-y-4">
-//           <input
-//             type="text"
-//             name="title"
-//             placeholder="Title"
-//             value={newItem.title || ""}
-//             onChange={handleInputChange}
-//             className="p-2 border rounded"
-//           />
-//           <input
-//             type="text"
-//             name="author"
-//             placeholder="Author"
-//             value={newItem.author || ""}
-//             onChange={handleInputChange}
-//             className="p-2 border rounded"
-//           />
-//           <input
-//             type="text"
-//             name="price"
-//             placeholder="Price"
-//             value={newItem.price || ""}
-//             onChange={handleInputChange}
-//             className="p-2 border rounded"
-//           />
-//           <input
-//             type="text"
-//             name="short_description"
-//             placeholder="Description"
-//             value={newItem.short_description || ""}
-//             onChange={handleInputChange}
-//             className="p-2 border rounded"
-//           />
-//           <input
-//             type="text"
-//             name="cover_image"
-//             placeholder="Image URL"
-//             value={newItem.cover_image || ""}
-//             onChange={handleInputChange}
-//             className="p-2 border rounded"
-//           />
+//           <div className="flex flex-col">
+//             <label htmlFor="title" className="text-sm font-medium text-gray-700 mb-1">
+//               Title <span className="text-red-500">*</span>
+//             </label>
+//             <input
+//               id="title"
+//               type="text"
+//               name="title"
+//               required
+//               placeholder="Book title"
+//               value={newBook.title}
+//               onChange={handleInputChange}
+//               className="p-2 border rounded"
+//             />
+//           </div>
+
+//           <div className="flex flex-col">
+//             <label htmlFor="author" className="text-sm font-medium text-gray-700 mb-1">
+//               Author <span className="text-red-500">*</span>
+//             </label>
+//             <input
+//               id="author"
+//               type="text"
+//               name="author"
+//               required
+//               placeholder="Author name"
+//               value={newBook.author}
+//               onChange={handleInputChange}
+//               className="p-2 border rounded"
+//             />
+//           </div>
+
+//           <div className="flex flex-col">
+//             <label htmlFor="price" className="text-sm font-medium text-gray-700 mb-1">
+//               Price <span className="text-red-500">*</span>
+//             </label>
+//             <input
+//               id="price"
+//               type="text"
+//               name="price"
+//               required
+//               placeholder="0.00"
+//               value={newBook.price}
+//               onChange={handleInputChange}
+//               className="p-2 border rounded"
+//             />
+//           </div>
+
+//           <div className="flex flex-col">
+//             <label htmlFor="description" className="text-sm font-medium text-gray-700 mb-1">
+//               Description
+//             </label>
+//             <textarea
+//               id="description"
+//               name="short_description"
+//               placeholder="Book description (optional)"
+//               value={newBook.short_description}
+//               onChange={handleInputChange}
+//               className="p-2 border rounded h-24"
+//             />
+//           </div>
+
+//           <div className="flex flex-col">
+//             <label htmlFor="image" className="text-sm font-medium text-gray-700 mb-1">
+//               Cover Image URL
+//             </label>
+//             <input
+//               id="image"
+//               type="text"
+//               name="cover_image"
+//               placeholder="Image URL (optional)"
+//               value={newBook.cover_image}
+//               onChange={handleInputChange}
+//               className="p-2 border rounded"
+//             />
+//           </div>
+
 //           <button
-//             onClick={addItem}
-//             className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
+//             onClick={addBook}
+//             className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600 mt-4"
 //           >
-//             Add Item
+//             Add Book
 //           </button>
 //         </div>
 //       </div>
 
-//       {/* Edit Item Form (Conditional Rendering) */}
-//       {editItem.id && (
-//         <div className="mb-8">
-//           <h2 className="text-xl font-semibold mb-4">Edit Item</h2>
-//           <div className="flex flex-col space-y-4">
-//             <input
-//               type="text"
-//               name="title"
-//               placeholder="Title"
-//               value={editItem.title || ""}
-//               onChange={handleEditInputChange}
-//               className="p-2 border rounded"
-//             />
-//             <input
-//               type="text"
-//               name="author"
-//               placeholder="Author"
-//               value={editItem.author || ""}
-//               onChange={handleEditInputChange}
-//               className="p-2 border rounded"
-//             />
-//             <input
-//               type="text"
-//               name="price"
-//               placeholder="Price"
-//               value={editItem.price || ""}
-//               onChange={handleEditInputChange}
-//               className="p-2 border rounded"
-//             />
-//             <input
-//               type="text"
-//               name="short_description"
-//               placeholder="Description"
-//               value={editItem.short_description || ""}
-//               onChange={handleEditInputChange}
-//               className="p-2 border rounded"
-//             />
-//             <input
-//               type="text"
-//               name="cover_image"
-//               placeholder="Image URL"
-//               value={editItem.cover_image || ""}
-//               onChange={handleEditInputChange}
-//               className="p-2 border rounded"
-//             />
-//             <button
-//               onClick={updateItem}
-//               className="bg-green-500 text-white p-2 rounded hover:bg-green-600"
-//             >
-//               Update Item
-//             </button>
-//             <button
-//               onClick={() =>
-//                 setEditItem({
-//                   id: null,
-//                   title: "",
-//                   author: "",
-//                   price: "",
-//                   short_description: "",
-//                   cover_image: "",
-//                 })
-//               }
-//               className="bg-gray-500 text-white p-2 rounded hover:bg-gray-600"
-//             >
-//               Cancel
-//             </button>
-//           </div>
-//         </div>
-//       )}
-
-//       {/* Display Items */}
+//       {/* Display User's Books */}
 //       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-//         {items.map((item, index) => (
-//           <div key={item.id ||`item-${index}`} className="border p-4 rounded-lg shadow-md">
+//         {userBooks.map((book) => (
+//           <div key={book.id} className="border p-4 rounded-lg shadow-md">
 //             <figure>
 //               <Image
 //                 src="/images/book1.jpg"
-//                 alt={item.title ? `Cover image for ${item.title}` : "Book cover image"}
+//                  alt={book.title ? `Cover image for ${book.title}` : "Book cover image"}
 //                 width={500}
 //                 height={500}
-//                 className="h-96 w-full object-cover"
+//                  className="h-96 w-full object-cover"
 //               />
 //             </figure>
 //             <div className="p-4">
-//               <h2 className="text-lg font-semibold">{item.title}</h2>
-//               <p className="text-gray-600">Author: {item.author}</p>
-//               <p className="text-gray-600">Price: ${item.price}</p>
-//               <p className="text-gray-600">Description: {item.short_description}</p>
+//               <h2 className="text-lg font-semibold">{book.title}</h2>
+//               <p className="text-gray-600">Author: {book.author}</p>
+//               <p className="text-gray-600">Price: ${book.price}</p>
+//               <p className="text-gray-600">Description: {book.short_description}</p>
 //             </div>
 //             <div className="mt-4 flex space-x-2">
 //               <button
-//                 onClick={() => setEditItem(item)}
+//                 onClick={() => handleEditClick(book)}
 //                 className="bg-yellow-500 text-white p-1 rounded hover:bg-yellow-600"
 //               >
 //                 Edit
 //               </button>
 //               <button
-//                 onClick={() => deleteItem(item.id)}
+//                 onClick={() => deleteBook(book.id)}
 //                 className="bg-red-500 text-white p-1 rounded hover:bg-red-600"
 //               >
 //                 Delete
@@ -647,6 +919,20 @@ export default function UserDashboard() {
 //           </div>
 //         ))}
 //       </div>
+
+//       {/* Edit Book Modal */}
+//       {isEditModalOpen && (
+//         <EditBookModal
+//           book={currentEditBook}
+//           onClose={() => setIsEditModalOpen(false)}
+//           onUpdate={handleUpdateBook}
+//           error={error}
+//         />
+//       )}
 //     </div>
 //   );
 // }
+
+
+
+
