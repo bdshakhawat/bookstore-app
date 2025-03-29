@@ -24,12 +24,17 @@ app.get("/books", async (req, res) => {
     const { sort = 'newest' } = req.query;
     // Default: newest first
     let orderBy = 'created_at DESC'; 
+    // Sort by lowest first
     if (sort === 'price-low') orderBy = 'price ASC';
+    // Sort by highest first
     if (sort === 'price-high') orderBy = 'price DESC';
 
+   // Executes a SQL query using a connection pool from the pool
     const [rows] = await pool.query(
+      // Applies the sorting logic dynamically.
       `SELECT * FROM books ORDER BY ${orderBy}`
     );
+    // Sends the retrieved books as JSON.
     res.status(200).json(rows);
   } catch (err) {
     console.error("Error fetching books:", err);
@@ -57,7 +62,7 @@ app.post("/book", requireAuth, async (req, res) => {
     // Set default values for optional fields
     const description = short_description || "No description available";
     // Default image path
-    const image = cover_image || "/images/default-book.jpg"; 
+    const image = cover_image || "/images/book1.jpg"; 
     const [result] = await pool.query(
       "INSERT INTO books (title, author, price, short_description, cover_image, user_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
       [title, author, price, description, image, user_id, created_at]
@@ -76,24 +81,7 @@ app.post("/book", requireAuth, async (req, res) => {
 
 
 
-// Route to get all books
-app.get("/books", async (req, res) => {
-  try {
-    const { sort = 'newest' } = req.query;
-    // Default: newest first
-    let orderBy = 'created_at DESC'; 
-    if (sort === 'price-low') orderBy = 'price ASC';
-    if (sort === 'price-high') orderBy = 'price DESC';
 
-    const [rows] = await pool.query(
-      `SELECT * FROM books ORDER BY ${orderBy}`
-    );
-    res.status(200).json(rows);
-  } catch (err) {
-    console.error("Error fetching books:", err);
-    res.status(500).json({ error: "Failed to get books" });
-  }
-});
 
 
 
@@ -103,9 +91,11 @@ app.get("/my-books", requireAuth, async (req, res) => {
     // From Clerk middleware, we have access to req.auth.userId
     const userId = req.auth.userId; 
     const [rows] = await pool.query(
-      "SELECT * FROM books WHERE user_id = ?",
+      //   Sorting added here
+      "SELECT * FROM books WHERE user_id = ? ORDER BY created_at DESC",
       [userId]
     );
+    // Returning sorted books
     res.status(200).json(rows);
   } catch (err) {
     console.error("Error fetching user's books:", err);
