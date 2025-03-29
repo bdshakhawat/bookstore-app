@@ -1,6 +1,4 @@
 
-
-
 import express from 'express';
 import cors from "cors";
 import { ClerkExpressWithAuth } from "@clerk/clerk-sdk-node";
@@ -24,8 +22,8 @@ app.get('/', (req, res) => {
 app.get("/books", async (req, res) => {
   try {
     const { sort = 'newest' } = req.query;
-    
-    let orderBy = 'created_at DESC'; // Default: newest first
+    // Default: newest first
+    let orderBy = 'created_at DESC'; 
     if (sort === 'price-low') orderBy = 'price ASC';
     if (sort === 'price-high') orderBy = 'price DESC';
 
@@ -40,7 +38,7 @@ app.get("/books", async (req, res) => {
 });
 
 // Route to create a new book (updated to include timestamp, with optional fields)
-app.post("/books", requireAuth, async (req, res) => {
+app.post("/book", requireAuth, async (req, res) => {
   try {
     const { title, author, price, short_description, cover_image } = req.body;
     const user_id = req.auth.userId;
@@ -172,7 +170,8 @@ app.put("/books/:id", requireAuth, async (req, res) => {
 // Route to delete a book (DELETE)
 app.delete("/books/:id", requireAuth, async (req, res) => {
   const { id } = req.params;
-  const userId = req.auth.userId; // Get authenticated user ID
+  // Get authenticated user ID
+  const userId = req.auth.userId; 
 
   try {
     // Find the book to check ownership

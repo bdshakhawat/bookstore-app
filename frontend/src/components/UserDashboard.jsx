@@ -54,7 +54,7 @@ export default function UserDashboard() {
       
       const token = await getToken();
       await axios.post(
-        "http://localhost:5000/books",
+        "http://localhost:5000/book",
         { ...newBook, user_id: userId },
         {
           headers: {
