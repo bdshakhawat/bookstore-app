@@ -111,6 +111,7 @@ export default function UserDashboard() {
       }
 
       const token = await getToken();
+      //  Sends edited data to backend
       await axios.put(
         `http://localhost:5000/books/${updatedBook.id}`,
         updatedBook,
@@ -123,7 +124,9 @@ export default function UserDashboard() {
 
       setSuccessMessage("Book updated successfully!");
       setTimeout(() => setSuccessMessage(null), 3000);
+      //  Refreshes list of books after update
       fetchUserBooks();
+      //  Closes modal
       setIsEditModalOpen(false);
     } catch (err) {
       setError(err.response?.data?.error || "Failed to update book");
@@ -234,7 +237,7 @@ export default function UserDashboard() {
               </label>
               <textarea
                 name="short_description"
-                value={editedBook.short_description}
+                value={editedBook.short_description || ""}
                 onChange={handleChange}
                 className="w-full p-2 border rounded h-24"
               />
@@ -247,7 +250,8 @@ export default function UserDashboard() {
               <input
                 type="text"
                 name="cover_image"
-                value={editedBook.cover_image}
+                // value={cover_image || ""}
+                value={editedBook.cover_image || ""}
                 onChange={handleChange}
                 className="w-full p-2 border rounded"
               />
@@ -447,6 +451,7 @@ export default function UserDashboard() {
           <div key={book.id} className="border p-4 rounded-lg shadow-md">
             <figure>
               <Image
+              // change image
                 src="/images/book1.jpg"
                  alt={book.title ? `Cover image for ${book.title}` : "Book cover image"}
                 width={500}
@@ -458,6 +463,7 @@ export default function UserDashboard() {
               <h2 className="text-lg font-semibold">{book.title}</h2>
               <p className="text-gray-600">Author: {book.author}</p>
               <p className="text-gray-600">Price: ${book.price}</p>
+              
               <p className="text-gray-600">Description: {book.short_description}</p>
             </div>
             <div className="mt-4 flex space-x-2">

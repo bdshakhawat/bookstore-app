@@ -60,9 +60,9 @@ app.post("/book", requireAuth, async (req, res) => {
     }
 
     // Set default values for optional fields
-    const description = short_description || "No description available";
+    const description = short_description ? short_description : null;
     // Default image path
-    const image = cover_image || "/images/book1.jpg"; 
+    const image = cover_image ? cover_image : null;
     const [result] = await pool.query(
       "INSERT INTO books (title, author, price, short_description, cover_image, user_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
       [title, author, price, description, image, user_id, created_at]
@@ -71,18 +71,14 @@ app.post("/book", requireAuth, async (req, res) => {
     res.status(201).json({ 
       message: "Book created successfully", 
       bookId: result.insertId,
-      created_at
+      // includ property name
+      createdAt: created_at
     });
   } catch (err) {
     console.error("Error creating book:", err);
     res.status(500).json({ error: "Failed to create book" });
   }
 });
-
-
-
-
-
 
 
 // Route to get ONLY the logged-in user's books
@@ -128,12 +124,13 @@ app.put("/books/:id", requireAuth, async (req, res) => {
   const { title, author, price, short_description, cover_image } = req.body;
   const userId = req.auth.userId; // Get authenticated user ID
 // Validate input
-  if (!title || !author || !price || !short_description || !cover_image) {
+  if (!title || !author || !price) {
     return res.status(400).json({ error: "All fields are required" });
   }
 
   try {
     // Find the book to check ownership
+    // create a helper function for this
     const [rows] = await pool.query("SELECT user_id FROM books WHERE id = ?", [id]);
 
     if (rows.length === 0) {
