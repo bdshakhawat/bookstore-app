@@ -328,10 +328,17 @@ export default function UserDashboard() {
 
       <div className="flex justify-end space-x-4 mb-6">
         <button
-          onClick={() => router.push("/settings")}
+          onClick={() => router.push("/usersettings")}
           className="bg-gray-500 text-white p-2 rounded hover:bg-gray-600"
         >
           Settings
+        </button>
+        <button
+          onClick={() => router.push("/books")}
+          className="bg-green-500 text-white p-2 rounded hover:bg-gray-600"
+        >
+          View All Books 
+
         </button>
         <button
           onClick={() => {

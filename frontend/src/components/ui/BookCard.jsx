@@ -21,11 +21,12 @@ const BookCard = ({book}) => {
               : book.title}
             </h2>
             <p className="text-gray-400 mt-2">
-              {book.short_description.length > 100
-               ? book.short_description.slice(0, 60) + "..."
-               : book.short_description}
-          
+               {book.short_description?.length > 100
+                ? book.short_description.slice(0, 60) + "..."
+                : book.short_description}
              </p>
+
+           
           
         <div className="flex justify-between items-center mt-5">
           <div className="flex items-center">

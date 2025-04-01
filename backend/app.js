@@ -100,7 +100,7 @@ app.get("/my-books", requireAuth, async (req, res) => {
 });
 
 // Route to get a single book by ID
-app.get("/books/:id", async (req, res) => {
+app.get("/book/:id", async (req, res) => {
   const { id } = req.params;
 
   try {
@@ -119,7 +119,7 @@ app.get("/books/:id", async (req, res) => {
 });
 
 // Route to update a book (PUT)
-app.put("/books/:id", requireAuth, async (req, res) => {
+app.put("/book/:id", requireAuth, async (req, res) => {
   const { id } = req.params;
   const { title, author, price, short_description, cover_image } = req.body;
   const userId = req.auth.userId; // Get authenticated user ID
