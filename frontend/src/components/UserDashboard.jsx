@@ -113,7 +113,7 @@ export default function UserDashboard() {
       const token = await getToken();
       //  Sends edited data to backend
       await axios.put(
-        `http://localhost:5000/books/${updatedBook.id}`,
+        `http://localhost:5000/book/${updatedBook.id}`,
         updatedBook,
         {
           headers: {

@@ -2,6 +2,7 @@
 import express from 'express';
 import cors from "cors";
 import { ClerkExpressWithAuth } from "@clerk/clerk-sdk-node";
+import { checkBookOwnership } from './helperFunctions/checkBookOwnership.js'; // Import the helper function for ownership check
 // Import the database connection
 import pool from './db.js'; 
 
@@ -23,11 +24,19 @@ app.get("/books", async (req, res) => {
   try {
     const { sort = 'newest' } = req.query;
     // Default: newest first
-    let orderBy = 'created_at DESC'; 
-    // Sort by lowest first
-    if (sort === 'price-low') orderBy = 'price ASC';
-    // Sort by highest first
-    if (sort === 'price-high') orderBy = 'price DESC';
+    let orderBy;
+    // Using switch statement for sorting logic
+    switch (sort) {
+      case "price-low":
+        orderBy = "price ASC";
+        break;
+      case "price-high":
+        orderBy = "price DESC";
+        break;
+      default:
+        // Default: Newest first
+        orderBy = "created_at DESC"; 
+    }
 
    // Executes a SQL query using a connection pool from the pool
     const [rows] = await pool.query(
@@ -118,27 +127,23 @@ app.get("/book/:id", async (req, res) => {
   }
 });
 
+
 // Route to update a book (PUT)
 app.put("/book/:id", requireAuth, async (req, res) => {
   const { id } = req.params;
   const { title, author, price, short_description, cover_image } = req.body;
-  const userId = req.auth.userId; // Get authenticated user ID
-// Validate input
+  const userId = req.auth.userId;
+
   if (!title || !author || !price) {
     return res.status(400).json({ error: "All fields are required" });
   }
 
   try {
-    // Find the book to check ownership
-    // create a helper function for this
-    const [rows] = await pool.query("SELECT user_id FROM books WHERE id = ?", [id]);
+    // Use helper function to check ownership
+    const ownershipCheck = await checkBookOwnership(id, userId, pool);
 
-    if (rows.length === 0) {
-      return res.status(404).json({ error: "Book not found" });
-    }
-
-    if (rows[0].user_id !== userId) {
-      return res.status(403).json({ error: "You are not authorized to update this book" });
+    if (ownershipCheck.error) {
+      return res.status(ownershipCheck.status).json({ error: ownershipCheck.error });
     }
 
     // Update the book
@@ -154,22 +159,54 @@ app.put("/book/:id", requireAuth, async (req, res) => {
   }
 });
 
+
+// Route to update a book (PUT)
+// app.put("/book/:id", requireAuth, async (req, res) => {
+//   const { id } = req.params;
+//   const { title, author, price, short_description, cover_image } = req.body;
+//   const userId = req.auth.userId; // Get authenticated user ID
+// // Validate input
+//   if (!title || !author || !price) {
+//     return res.status(400).json({ error: "All fields are required" });
+//   }
+
+//   try {
+//     // Find the book to check ownership
+//     // create a helper function for this
+//     const [rows] = await pool.query("SELECT user_id FROM books WHERE id = ?", [id]);
+
+//     if (rows.length === 0) {
+//       return res.status(404).json({ error: "Book not found" });
+//     }
+
+//     if (rows[0].user_id !== userId) {
+//       return res.status(403).json({ error: "You are not authorized to update this book" });
+//     }
+
+//     // Update the book
+//     await pool.query(
+//       "UPDATE books SET title = ?, author = ?, price = ?, short_description = ?, cover_image = ? WHERE id = ?",
+//       [title, author, price, short_description, cover_image, id]
+//     );
+
+//     res.status(200).json({ message: "Book updated successfully" });
+//   } catch (err) {
+//     console.error("Error updating book:", err);
+//     res.status(500).json({ error: "Failed to update book" });
+//   }
+// });
+
 // Route to delete a book (DELETE)
 app.delete("/books/:id", requireAuth, async (req, res) => {
   const { id } = req.params;
-  // Get authenticated user ID
-  const userId = req.auth.userId; 
+  const userId = req.auth.userId;
 
   try {
-    // Find the book to check ownership
-    const [rows] = await pool.query("SELECT user_id FROM books WHERE id = ?", [id]);
+    // Use helper function to check ownership
+    const ownershipCheck = await checkBookOwnership(id, userId, pool);
 
-    if (rows.length === 0) {
-      return res.status(404).json({ error: "Book not found" });
-    }
-
-    if (rows[0].user_id !== userId) {
-      return res.status(403).json({ error: "You are not authorized to delete this book" });
+    if (ownershipCheck.error) {
+      return res.status(ownershipCheck.status).json({ error: ownershipCheck.error });
     }
 
     // Delete the book
@@ -180,5 +217,31 @@ app.delete("/books/:id", requireAuth, async (req, res) => {
     res.status(500).json({ error: "Failed to delete book" });
   }
 });
+
+// app.delete("/books/:id", requireAuth, async (req, res) => {
+//   const { id } = req.params;
+//   // Get authenticated user ID
+//   const userId = req.auth.userId; 
+
+//   try {
+//     // Find the book to check ownership
+//     const [rows] = await pool.query("SELECT user_id FROM books WHERE id = ?", [id]);
+
+//     if (rows.length === 0) {
+//       return res.status(404).json({ error: "Book not found" });
+//     }
+
+//     if (rows[0].user_id !== userId) {
+//       return res.status(403).json({ error: "You are not authorized to delete this book" });
+//     }
+
+//     // Delete the book
+//     await pool.query("DELETE FROM books WHERE id = ?", [id]);
+//     res.status(200).json({ message: "Book deleted successfully" });
+//   } catch (err) {
+//     console.error("Error deleting book:", err);
+//     res.status(500).json({ error: "Failed to delete book" });
+//   }
+// });
 
 export default app;
