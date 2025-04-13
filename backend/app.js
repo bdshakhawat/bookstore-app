@@ -6,6 +6,7 @@ import { checkBookOwnership } from './helperFunctions/checkBookOwnership.js'; //
 // Import the database connection
 import pool from './db.js'; 
 
+
 const app = express();
 app.use(cors());
 
@@ -197,16 +198,23 @@ app.put("/book/:id", requireAuth, async (req, res) => {
 // });
 
 // Route to delete a book (DELETE)
+
 app.delete("/books/:id", requireAuth, async (req, res) => {
+
+app.delete("/books/:id",  async (req, res) => {
+
   const { id } = req.params;
   const userId = req.auth.userId;
 
   try {
+
     // Use helper function to check ownership
     const ownershipCheck = await checkBookOwnership(id, userId, pool);
 
     if (ownershipCheck.error) {
       return res.status(ownershipCheck.status).json({ error: ownershipCheck.error });
+
+   
     }
 
     // Delete the book
@@ -218,30 +226,6 @@ app.delete("/books/:id", requireAuth, async (req, res) => {
   }
 });
 
-// app.delete("/books/:id", requireAuth, async (req, res) => {
-//   const { id } = req.params;
-//   // Get authenticated user ID
-//   const userId = req.auth.userId; 
 
-//   try {
-//     // Find the book to check ownership
-//     const [rows] = await pool.query("SELECT user_id FROM books WHERE id = ?", [id]);
-
-//     if (rows.length === 0) {
-//       return res.status(404).json({ error: "Book not found" });
-//     }
-
-//     if (rows[0].user_id !== userId) {
-//       return res.status(403).json({ error: "You are not authorized to delete this book" });
-//     }
-
-//     // Delete the book
-//     await pool.query("DELETE FROM books WHERE id = ?", [id]);
-//     res.status(200).json({ message: "Book deleted successfully" });
-//   } catch (err) {
-//     console.error("Error deleting book:", err);
-//     res.status(500).json({ error: "Failed to delete book" });
-//   }
-// });
 
 export default app;
