@@ -33,9 +33,7 @@ const BookstPage = () => {
 }, [page, filter.sort]); 
 
 
-  // useEffect(() => {
-  //   fetchBooks();
-  // }, [page, filter.sort]); 
+   
 
 
   

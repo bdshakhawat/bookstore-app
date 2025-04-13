@@ -14,7 +14,7 @@ export const generateStaticParams = async () => {
 const BookDetailPage = async({params}) => {
     // Destructuring the blogId from params
     const { bookId} = params;
-    const res =await fetch(`http://localhost:5000/books/${bookId}`);
+    const res =await fetch(`http://localhost:5000/book/${bookId}`);
     const book= await res.json();
     
     return (
