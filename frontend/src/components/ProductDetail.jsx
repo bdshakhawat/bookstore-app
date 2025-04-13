@@ -45,9 +45,7 @@ export default function ProductDetail() {
           </div>
         </SignedIn>
         <SignedOut>
-          {/* Pass redirectUrl directly to SignInButton */}
 
-          {/* <SignInButton redirectUrl="/dashboard" /> */}
           <SignInButton  />
         </SignedOut>
       </div>
