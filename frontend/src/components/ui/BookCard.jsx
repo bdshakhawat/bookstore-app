@@ -21,7 +21,7 @@ const BookCard = ({book}) => {
               : book.title}
             </h2>
             <p className="text-gray-400 mt-2">
-              {book.short_description.length > 100
+              {book.short_description?.length
                ? book.short_description.slice(0, 60) + "..."
                : book.short_description}
           
