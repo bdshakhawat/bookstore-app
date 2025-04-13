@@ -6,6 +6,7 @@ import { checkBookOwnership } from './helperFunctions/checkBookOwnership.js'; //
 // Import the database connection
 import pool from './db.js'; 
 
+
 const app = express();
 app.use(cors());
 
@@ -168,11 +169,14 @@ app.delete("/book/:id", requireAuth, async (req, res) => {
   const userId = req.auth.userId;
 
   try {
+
     // Use helper function to check ownership
     const ownershipCheck = await checkBookOwnership(id, userId, pool);
 
     if (ownershipCheck.error) {
       return res.status(ownershipCheck.status).json({ error: ownershipCheck.error });
+
+   
     }
 
     // Delete the book

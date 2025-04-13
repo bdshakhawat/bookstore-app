@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import BookCard from "@/components/ui/BookCard";
 import SearchBar from "@/components/ui/SearchBar";
 import FilterBar from "@/components/ui/FilterBar";
@@ -14,6 +14,7 @@ const BookstPage = () => {
   const [page, setPage] = useState(1);
   const router = useRouter();
   const { signOut } = useClerk();
+
 
   const fetchBooks = async () => {
     const res = await fetch(`http://localhost:5000/books?page=${page}&sort=${filter.sort}`);
@@ -33,6 +34,9 @@ const BookstPage = () => {
 
 
    
+
+
+  
 
   const filteredBooks = books
     .filter((book) =>
