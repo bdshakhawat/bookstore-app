@@ -1,6 +1,7 @@
 
 import express from 'express';
 import cors from "cors";
+import { requireAuth } from './middleware/clerkAuth.js';
 import pool from './db.js'; // Import the database connection
 const app = express();
 app.use(cors()); 
@@ -96,12 +97,13 @@ app.put("/books/:id", async (req, res) => {
 });
 
 // Route to delete a book (DELETE)
-app.delete("/books/:id", async (req, res) => {
+
+app.delete("/books/:id",  async (req, res) => {
   const { id } = req.params;
 
   try {
     const [result] = await pool.query("DELETE FROM books WHERE id = ?", [id]);
-
+  //  User must be authenticated before operating any delete requests
     if (result.affectedRows === 0) {
       return res.status(404).json({ error: "Book not found" });
     }
