@@ -53,7 +53,7 @@ const BookCard = ({book}) => {
             : book.title}
         </h2>
         <p className="text-gray-300 mt-2">
-          {book.short_description} {/* Display full description on hover */}
+          {book.short_description} 
         </p>
         <div className="mt-4">
           <p className="text-sm text-gray-300">Author: {book.author}</p>
