@@ -31,6 +31,7 @@ export default function UserDashboard() {
   const fetchUserBooks = async () => {
     try {
       const token = await getToken();
+      console.log("Token:", token);
       //  Calls sorted endpoint
       const response = await axios.get("http://localhost:5000/my-books", {
         headers: {
