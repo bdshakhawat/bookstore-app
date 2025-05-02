@@ -4,9 +4,11 @@ import axios from "axios";
 import { useRouter } from "next/navigation";
 import { useClerk, useAuth } from "@clerk/nextjs";
 import Image from "next/image";
+import Link from "next/link";
 
 export default function UserDashboard() {
   const [userBooks, setUserBooks] = useState([]);
+  console.log("UserBooks:", userBooks); // Debugging line to check userBooks state
   const [newBook, setNewBook] = useState({
     title: "",
     author: "",
@@ -34,10 +36,12 @@ export default function UserDashboard() {
     console.log("Token being sent:", token); // Verify token exists
     
     const response = await axios.get("http://localhost:5000/books/my-books", {
+    
       headers: {
         Authorization: `Bearer ${token}`,
       },
     });
+      setUserBooks(response.data);
     
     // ... rest of your code
   } catch (err) {
@@ -458,7 +462,7 @@ export default function UserDashboard() {
       </div>
 
       {/* Display User's Books */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
         {/* // Renders books in received order */}
         {userBooks.map((book) => (
           <div key={book.id} className="border p-4 rounded-lg shadow-md">
@@ -479,19 +483,27 @@ export default function UserDashboard() {
               
               <p className="text-gray-600">Description: {book.short_description}</p>
             </div>
-            <div className="mt-4 flex space-x-2">
+            <div className="mt-4 flex space-x-8">
               <button
                 onClick={() => handleEditClick(book)}
-                className="bg-yellow-500 text-white p-1 rounded hover:bg-yellow-600"
+                className="bg-yellow-500 text-white p-2 rounded hover:bg-yellow-600"
               >
                 Edit
               </button>
               <button
                 onClick={() => handleDeleteClick(book)}
-                className="bg-red-500 text-white p-1 rounded hover:bg-red-600"
+                className="bg-red-500 text-white p-2 rounded hover:bg-red-600"
               >
                 Delete
               </button>
+              <Link href="/checkout"    >
+                <button
+                  className="bg-cyan-500 text-white p-2 rounded hover:bg-green-600"
+                >
+                  Order Now
+                </button>
+
+              </Link>
             </div>
           </div>
         ))}
