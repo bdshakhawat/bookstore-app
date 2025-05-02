@@ -1,64 +1,55 @@
-// import BookDetailsCard from "@/components/ui/BookDetailsCard";
-
-// const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
-
-// export const generateStaticParams = async () => {
-//   const res = await fetch(`${BASE_URL}/books`);
-  
-//   if (!res.ok) {
-//     throw new Error("Failed to fetch books in generateStaticParams");
-//   }
-
-//   const books = await res.json();
-
-//   return books.map((book) => ({
-//     bookId: book.id.toString(),
-//   }));
-// };
-
-// const BookDetailPage = async ({ params }) => {
-//   const { bookId } = params;
-//   const res = await fetch(`${BASE_URL}/books/${bookId}`);
-  
-//   if (!res.ok) {
-//     // You could also return a 404 page here if you prefer
-//     throw new Error(`Failed to fetch book with ID ${bookId}`);
-//   }
-
-//   const book = await res.json();
-
-//   return (
-//     <div className="my-10">
-//       <BookDetailsCard book={book} />
-//     </div>
-//   );
-// };
-
-// export default BookDetailPage;
-
 import BookDetailsCard from "@/components/ui/BookDetailsCard";
 
-export const generateStaticParams = async () => {
-  const res = await fetch("http://localhost:5000/books");
-  const books = await res.json();
-  return books.map((book) => ({
-    bookId: book.id.toString(),
-  }));
+// Generate static paths for each book
+export async function generateStaticParams() {
+  try {
+    const res = await fetch(`http://localhost:5000/books`);
+
+    if (!res.ok) {
+      throw new Error(`Failed to fetch books: ${res.status}`);
+    }
+
+    const books = await res.json();
+
+    return books.map((book) => ({
+      bookId: book.id.toString(),
+    }));
+  } catch (error) {
+    console.error("Error in generateStaticParams:", error);
+    return []; // Prevent build crash
+  }
+}
+
+// Page component for a single book
+const BookDetailPage = async ({ params }) => {
+  const { bookId } = params;
+
+  try {
+    const res = await fetch(
+      `http://localhost:5000/books/${bookId}`
+    );
+
+    if (!res.ok) {
+      throw new Error(`Failed to fetch book ${bookId}: ${res.status}`);
+    }
+
+    const book = await res.json();
+
+    return (
+      <div className="my-10">
+        <BookDetailsCard book={book} />
+      </div>
+    );
+  } catch (error) {
+    console.error("Error loading book detail page:", error);
+    return (
+      <div className="my-10 text-red-500">
+        Failed to load book details. Please try again later.
+      </div>
+    );
+  }
 };
 
+export default BookDetailPage;
 
 
-const BookDetailPage = async({params}) => {
-    // Destructuring the blogId from params
-    const {bookId} = await params;
-    const res =await fetch(`http://localhost:5000/books/${bookId}`);
-    const book= await res.json();
-    
-    return (
-        <div className="my-10">
-            <BookDetailsCard book={book} />
-        </div>
-      );
-  };
-
-export default  BookDetailPage;
