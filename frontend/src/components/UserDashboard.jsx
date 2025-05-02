@@ -29,20 +29,25 @@ export default function UserDashboard() {
 
   // Fetch user's books
   const fetchUserBooks = async () => {
-    try {
-      const token = await getToken();
-      console.log("Token:", token);
-      //  Calls sorted endpoint
-      const response = await axios.get("http://localhost:5000/my-books", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      setUserBooks(response.data);
-    } catch (err) {
-      console.error("Error fetching user's books:", err);
-    }
-  };
+  try {
+    const token = await getToken();
+    console.log("Token being sent:", token); // Verify token exists
+    
+    const response = await axios.get("http://localhost:5000/books/my-books", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    
+    // ... rest of your code
+  } catch (err) {
+    console.error("Full error:", {
+      message: err.message,
+      response: err.response?.data,
+      status: err.response?.status,
+    });
+  }
+};
 
   useEffect(() => {
     fetchUserBooks();
